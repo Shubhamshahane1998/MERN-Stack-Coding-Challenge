@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pagination Example</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/5.3.0/css/bootstrap.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+
+    <!-- <script src="jquery-3.7.1.min.js"></script> -->
+    <style>
+        .pagination {
+            justify-content: center;
+        }
+
+        .pagination li {
+            cursor: pointer;
+        }
+
+        .pagination .active {
+            font-weight: bold;
+        }
+        .apexcharts-menu-icon{
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+    <div class=" mt-5" style="margin-left:100px;margin-right:100px;">
+        <h2 class="text-center mb-4">Transaction Dasboard</h2>
+
+        <!-- Search input field for ID -->
+        <div class="row mb-3" >
+            <div class="col-md-3">
+                <input type="text" id="search" class="form-control" placeholder="Search Transaction">
+            </div>
+            <div > 
+                <select id="month_data" class="form-select"style="margin: auto;margin-left: 870px;width: 230px; margin-top: -37px;"></select> 
+            </div>
+        </div>
+        
+        <div>
+            <table id="productTable" class="table " style="margin-left: -49px;">
+                <thead>
+                    <tr>
+                        <th scope="col" >ID</th>
+                        <th scope="col" >Title</th>
+                        <th scope="col" >Price</th>
+                        <th scope="col" >Description</th>
+                        <th scope="col" >Category</th>
+                        <th scope="col" >Sold</th>
+                        <th scope="col" >Image</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                    <!-- Table rows will be dynamically added here -->
+                </tbody>
+            </table>
+        </div>
+        <div style="display:inline-flex">
+            <h7>Page No : 1</h7>
+         <ul id="pagination" class="pagination" style="margin-left: 320px;"></ul>
+            <h7 style="margin-left: 230px;">Total Page : 10</h7>
+
+        </div>
+        <hr>    
+        <div style="text-align: center;">
+            <div style="display:inline;"><h5>Statistics-<span id="monthName">March</span><span style="font-family: serif;">(Selected month name from dropdown)</span></h5></div>
+            <div style=" box-sizing: content-box ;text-align:center ;background-color: burlywood;width: 300px;height:80px;margin-left: 425px;border-radius: 10px;">
+                <h6>Total Sales :&nbsp&nbsp&nbsp&nbsp<span id="totalSale"></span></h6>
+                <h6>Total Sold Item :&nbsp&nbsp&nbsp&nbsp<span id="soldItem"></span></h6>
+                <h6>Total Not Sold Item :&nbsp&nbsp&nbsp&nbsp<span id="notSoldItem"></span></h6>
+            </div>
+        </div>
+        <hr>
+        <!-- <div id="chart" style="text-align: center;">Bar Charts Status</div> -->
+        <div style="display:inline;text-align: center;"><h5>Bar Charts Status-<span id="monthName">March</span><span style="font-family: serif;">(Selected month name from dropdown)</span></h5></div>
+        <div  id="chart" ></div>
+
+        <hr>
+
+        <div style="display:inline;text-align: center;"><h5>Pie Charts Status-<span id="monthName">March</span><span style="font-family: serif;">(Selected month name from dropdown)</span></h5></div>
+    </div>
+    <div  id="piechart" style="margin-left: 475px;"></div>
+    <script>
+
+    $(document).ready(function () {
+        const apiUrl = 'https://s3.amazonaws.com/roxiler.com/product_transaction.json';
+        const itemsPerPage = 10; // Number of items per page
+        let currentPage = 1; // Current page number
+        let productsData = []; // Array to store original data from API
+
+        // AJAX request to fetch data
+        $.ajax({
+            method: "GET",
+            url: apiUrl,
+            dataType: 'json',
+            success: function (response) {
+                productsData = response; // Store original data
+                renderTableRows(productsData); // Initial render of table rows
+                renderPagination(productsData); // Initial render of pagination links
+                renderMonthFilter(); // Initial render of month filter
+                renderStartMonthFilter(); // Initial render of month filter 
+            },
+            error: function (xhr, status, error) {
+                console.error('Request failed:', status, error);
+                // Handle errors here
+            }
+        });
+        // Function to render table rows based on current page
+        function renderTableRows(data) {
+            const startIndex = (currentPage - 1) * itemsPerPage;
+            const endIndex = startIndex + itemsPerPage;
+            const tableBody = $('#tableBody');
+            tableBody.empty(); // Clear existing rows
+
+            for (let i = startIndex; i < endIndex && i < data.length; i++) {
+                const item = data[i];
+                const row = `<tr>
+                                <td>${item.id}</td>
+                                <td >${item.title}</td>
+                                <td>${item.price}</td>
+                                <td>${item.description}</td>
+                                <td>${item.category}</td>
+                                <td>${item.sold}</td>
+                                <td>${item.image}</td>
+                            </tr>`;
+                tableBody.append(row);
+            }
+        }
+
+        function renderPagination(data) {
+            const totalPages = Math.ceil(data.length / itemsPerPage);
+            const pagination = $('#pagination');
+            pagination.empty(); // Clear existing pagination
+
+            // Previous button
+            let prevDisabled = (currentPage === 1) ? 'disabled' : '';
+            let prevButton = `<li class="page-item ${prevDisabled}"><a class="page-link" href="#" data-page="${currentPage - 1}">Previous</a></li>`;
+            pagination.append(prevButton);
+
+            // Page number buttons
+            for (let i = 1; i <= totalPages; i++) {
+                let activeClass = (i === currentPage) ? 'active' : '';
+                let pageButton = `<li class="page-item ${activeClass}"><a class="page-link" href="#" data-page="${i}">${i}</a></li>`;
+                pagination.append(pageButton);
+            }
+
+            // Next button
+            let nextDisabled = (currentPage === totalPages) ? 'disabled' : '';
+            let nextButton = `<li class="page-item ${nextDisabled}"><a class="page-link" href="#" data-page="${currentPage + 1}">Next</a></li>`;
+            pagination.append(nextButton);
+
+            // Pagination click event listener
+            pagination.off('click', '.page-link').on('click', '.page-link', function (event) {
+                // event.preventDefault();
+                const pageNumber = parseInt($(this).attr('data-page'), 10);
+                if (pageNumber !== currentPage) {
+                    currentPage = pageNumber;
+                    renderTableRows(data);
+                    renderPagination(data); // Re-render pagination to update active page and button states
+                }
+            });
+        }
+
+
+        
+        // Event listener for search input changes
+        $('#search').on('input', handleSearch);
+
+        // Function to handle search input changes and update table
+        function handleSearch() {
+            const search = $('#search').val().trim();
+            const filteredData = filterData(search);
+            currentPage = 1; // Reset to first page when searching
+            renderTableRows(filteredData);
+            renderPagination(filteredData);
+        }
+
+
+        // Function to filter data based on search term
+        function filterData(search) {
+            let filteredData = productsData;
+
+            if (search) {
+                filteredData = filteredData.filter(item => 
+                    (item.title.toString().toLowerCase().includes(search.toLowerCase())) ||
+                    (item.description.toString().toLowerCase().includes(search.toLowerCase())) ||
+                    (item.price.toString().toLowerCase().includes(search.toLowerCase()))
+                );
+            }
+
+            return filteredData;
+        }
+
+        // Function to render month filter dropdown
+        function renderMonthFilter() {
+            const months = [
+                { name: "Select Month", value: "" },
+                { name: "January", value: "01" },
+                { name: "February", value: "02" },
+                { name: "March", value: "03" },
+                { name: "April", value: "04" },
+                { name: "May", value: "05" },
+                { name: "June", value: "06" },
+                { name: "July", value: "07" },
+                { name: "August", value: "08" },
+                { name: "September", value: "09" },
+                { name: "October", value: "10" },
+                { name: "November", value: "11" },
+                { name: "December", value: "12" }
+            ];
+
+            const select = $('#month_data');
+            select.empty(); // Clear existing options
+
+            months.forEach(month => {
+                const isSelected = month.value === '03' ? 'selected' : '';
+                // Construct the option element with conditional class and selected attribute
+                const option = `<option value="${month.value}" ${isSelected}>${month.name}</option>`;
+                select.append(option);
+            });
+        }
+
+        
+        $('#month_data').change(function () {
+            const selectedMonth = $(this).val();
+            const date = new Date(selectedMonth);
+            const monthName = date.toLocaleString('default', { month: 'long' });
+            $("#monthName").text(monthName);
+            filterByMonth(selectedMonth);
+        });
+
+        // Function to filter data by selected month
+        function filterByMonth(selectedMonth) {
+            let filteredData = productsData;
+            let totalPrice = 0;
+            let totalSold = 0;
+            let totalNotSold = 0;
+            const catagory_data=[];
+            const price_data = [];
+
+            if (selectedMonth) {
+                filteredData = productsData.filter(item => {
+                    const dateOfSale = new Date(item.dateOfSale);
+                    const month = (dateOfSale.getMonth() + 1).toString().padStart(2, '0'); // Zero-padding
+                    return month === selectedMonth;
+                });
+                filteredData.forEach(element => {
+                    const price = element.price;
+                    if (!isNaN(price)) {
+                        totalPrice += price;
+                        price_data.push(price);
+                    }
+
+                    if (element.sold) {
+                        totalSold++;
+                    } else {
+                        totalNotSold++;
+                    }
+                    if (element.category) {
+                        var catagory=element.category;
+                        catagory_data.push(catagory);
+                    }
+                });
+                function preprocessData(price_data, category_data) {
+                    let categoryMap = new Map();
+                    for (let i = 0; i < category_data.length; i++) {
+                        let category = category_data[i];
+                        let price = price_data[i];
+                        if (categoryMap.has(category)) {
+                            categoryMap.set(category, categoryMap.get(category) + price);
+                        } else {
+                            categoryMap.set(category, price);
+                        }
+                    }
+
+                    // Convert the map back to arrays
+                    let combinedCategories = Array.from(categoryMap.keys());
+                    let combinedPrices = Array.from(categoryMap.values());
+
+                    return { combinedPrices, combinedCategories };
+                }
+
+                var processedData = preprocessData(price_data, catagory_data);
+                pie_Charts(processedData.combinedPrices, processedData.combinedCategories);
+                // pie_Charts(price_data,catagory_data);
+                $("#totalSale").text(totalPrice.toFixed(2));
+                $("#soldItem").text(totalSold);
+                $("#notSoldItem").text(totalNotSold);
+                const categories = [
+                { label: "0-100", min: 0, max: 100 },
+                { label: "101-200", min: 101, max: 200 },
+                { label: "201-300", min: 201, max: 300 },
+                { label: "301-400", min: 301, max: 400 },
+                { label: "401-500", min: 401, max: 500 },
+                { label: "501-600", min: 501, max: 600 },
+                { label: "601-700", min: 601, max: 700 },
+                { label: "701-800", min: 701, max: 800 },
+                { label: "801-900", min: 801, max: 900 },
+                { label: "901-above", min: 901, max: Infinity }
+                ];
+                const categorizedData = categorizeData(price_data, categories);
+                function categorizeData(price_data, categories) {
+                    const counts = new Array(categories.length).fill(0);
+                    price_data.forEach(value => {
+                        for (let i = 0; i < categories.length; i++) {
+                            if (value >= categories[i].min && value <= categories[i].max) {
+                                counts[i]++;
+                                break;
+                            }
+                        }
+                    });
+
+                    return counts;
+                }
+                barCharts(categorizedData,categories);
+
+                currentPage = 1; // Reset to first page when filtering
+                renderTableRows(filteredData);
+                renderPagination(filteredData);
+            }
+        }
+        function renderStartMonthFilter() {
+        let startMonth = "03"; // Initial month to filter by
+        startMonth1(startMonth);
+        }
+
+        function startMonth1(selectedMonth1) {
+            let filteredData = productsData;
+            let totalPrice = 0;
+            let totalSold = 0;
+            let totalNotSold = 0;
+            const catagory_data=[];
+            const price_data = [];
+
+            if (selectedMonth1) {
+                filteredData = productsData.filter(item => {
+                    const dateOfSale = new Date(item.dateOfSale);
+                    const month = (dateOfSale.getMonth() + 1).toString().padStart(2, '0'); // Zero-padding
+                    return month === selectedMonth1;
+                });
+                filteredData.forEach(element => {
+                    const price = element.price;
+                    if (!isNaN(price)) {
+                        totalPrice += price;
+                        price_data.push(price);
+                    }
+
+                    if (element.sold) {
+                        totalSold++;
+                    } else {
+                        totalNotSold++;
+                    }
+                    if (element.category) {
+                        var catagory=element.category;
+                        catagory_data.push(catagory);
+                    }
+                });
+                function preprocessData(price_data, category_data) {
+                    let categoryMap = new Map();
+                    for (let i = 0; i < category_data.length; i++) {
+                        let category = category_data[i];
+                        let price = price_data[i];
+                        if (categoryMap.has(category)) {
+                            categoryMap.set(category, categoryMap.get(category) + price);
+                        } else {
+                            categoryMap.set(category, price);
+                        }
+                    }
+
+                    // Convert the map back to arrays
+                    let combinedCategories = Array.from(categoryMap.keys());
+                    let combinedPrices = Array.from(categoryMap.values());
+
+                    return { combinedPrices, combinedCategories };
+                }
+
+                var processedData = preprocessData(price_data, catagory_data);
+                pie_Charts(processedData.combinedPrices, processedData.combinedCategories);
+                // pie_Charts(price_data,catagory_data);
+                $("#totalSale").text(totalPrice.toFixed(2));
+                $("#soldItem").text(totalSold);
+                $("#notSoldItem").text(totalNotSold);
+                const categories = [
+                { label: "0-100", min: 0, max: 100 },
+                { label: "101-200", min: 101, max: 200 },
+                { label: "201-300", min: 201, max: 300 },
+                { label: "301-400", min: 301, max: 400 },
+                { label: "401-500", min: 401, max: 500 },
+                { label: "501-600", min: 501, max: 600 },
+                { label: "601-700", min: 601, max: 700 },
+                { label: "701-800", min: 701, max: 800 },
+                { label: "801-900", min: 801, max: 900 },
+                { label: "901-above", min: 901, max: Infinity }
+                ];
+                const categorizedData = categorizeData(price_data, categories);
+                function categorizeData(price_data, categories) {
+                    const counts = new Array(categories.length).fill(0);
+                    price_data.forEach(value => {
+                        for (let i = 0; i < categories.length; i++) {
+                            if (value >= categories[i].min && value <= categories[i].max) {
+                                counts[i]++;
+                                break;
+                            }
+                        }
+                    });
+
+                    return counts;
+                }
+                barCharts(categorizedData,categories);
+            }
+        }
+
+        // Example usage
+        function barCharts(data) {
+            var options = {
+                series: [{
+                    data: data
+                }],
+                chart: {
+                    type: 'bar',
+                    height: 350
+                },
+                plotOptions: {
+                    bar: {
+                        horizontal: false,
+                        columnWidth: '55%',
+                        endingShape: 'rounded'
+                    }
+                },
+                dataLabels: {
+                    enabled: false
+                },
+                stroke: {
+                    show: true,
+                    width: 2,
+                    colors: ['transparent']
+                },
+                xaxis: {
+                    categories: [
+                        "0-100", "101-200", "201-300", "301-400", 
+                        "401-500", "501-600", "601-700", "701-800", 
+                        "801-900", "901-above"
+                    ]
+                },
+                
+                fill: {
+                    opacity: 1
+                },
+                tooltip: {
+                    x:{
+                        show:false,
+                    },
+                    custom: function({series, seriesIndex, dataPointIndex, w}) {
+                        return '<div class="arrow_box" style="width:50px;text-align:center;">' +
+                        '<span>' + series[seriesIndex][dataPointIndex] + '</span>' +
+                        '</div>'
+                    },
+                },
+            };
+
+            var chart = new ApexCharts(document.querySelector("#chart"), options);
+            chart.render();
+        }
+
+  
+        function pie_Charts(price_data,catagory_data){
+            // function piechartData(){
+            var options = {
+                series: price_data,
+                chart: {
+                width: 380,
+                type: 'pie',
+                },
+                labels: catagory_data,
+                responsive: [{
+                breakpoint: 480,
+                options: {
+                    chart: {
+                    width: 200
+                    },
+                    legend: {
+                    position: 'bottom'
+                    }
+                }
+                }]
+            };
+            var chart = new ApexCharts(document.querySelector("#piechart"), options);
+            chart.render();
+    
+        }
+
+            
+    });
+
+    </script>
+</body>
+
+</html>
