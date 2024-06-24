@@ -78,12 +78,12 @@
         </div>
         <hr>
         <!-- <div id="chart" style="text-align: center;">Bar Charts Status</div> -->
-        <div style="display:inline;text-align: center;"><h5>Bar Charts Status-<span id="monthName">March</span><span style="font-family: serif;">(Selected month name from dropdown)</span></h5></div>
+        <div style="display:inline;text-align: center;"><h5>Bar Charts Status-<span id="monthNamebar">March</span><span style="font-family: serif;">(Selected month name from dropdown)</span></h5></div>
         <div  id="chart" ></div>
 
         <hr>
 
-        <div style="display:inline;text-align: center;"><h5>Pie Charts Status-<span id="monthName">March</span><span style="font-family: serif;">(Selected month name from dropdown)</span></h5></div>
+        <div style="display:inline;text-align: center;"><h5>Pie Charts Status-<span id="monthNamepie">March</span><span style="font-family: serif;">(Selected month name from dropdown)</span></h5></div>
     </div>
     <div  id="piechart" style="margin-left: 475px;"></div>
     <script>
@@ -232,6 +232,8 @@
             const date = new Date(selectedMonth);
             const monthName = date.toLocaleString('default', { month: 'long' });
             $("#monthName").text(monthName);
+            $("#monthNamebar").text(monthName);
+            $("#monthNamepie").text(monthName);
             filterByMonth(selectedMonth);
         });
 
